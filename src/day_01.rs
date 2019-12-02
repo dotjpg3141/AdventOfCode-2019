@@ -10,10 +10,10 @@ pub(crate) fn run() -> Result<(), Box<dyn error::Error>> {
         .collect::<Vec<_>>();
 
     let total_fuel: isize = fuel_input.iter().cloned().map(calculate_fuel).sum();
-    println!("Day1 a: {}", total_fuel);
+    println!("Day 1a: {}", total_fuel);
 
     let total_fuel: isize = fuel_input.iter().cloned().map(calculate_total_fuel).sum();
-    println!("Day1 b: {}", total_fuel);
+    println!("Day 1b: {}", total_fuel);
 
     Ok(())
 }
