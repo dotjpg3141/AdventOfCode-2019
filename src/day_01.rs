@@ -1,4 +1,4 @@
-use std::io::{self, BufRead};
+use std::io::BufRead;
 use std::*;
 
 pub(crate) fn run() -> Result<(), Box<dyn error::Error>> {
