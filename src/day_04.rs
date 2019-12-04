@@ -16,11 +16,11 @@ pub(crate) fn run() -> Result<(), Box<dyn error::Error>> {
     println!("Day 4a: {}", count);
 
     let count = count_passwords_candidates(start, end, |d1, d2, d3, d4, d5, d6| {
-        (d1 == d2 && d2 != d3)
-            || (d1 != d2 && d2 == d3 && d3 != d4)
-            || (d2 != d3 && d3 == d4 && d4 != d5)
-            || (d3 != d4 && d4 == d5 && d5 != d6)
-            || (d4 != d5 && d5 == d6)
+        d1 == d2 && d2 != d3
+            || d1 != d2 && d2 == d3 && d3 != d4
+            || d2 != d3 && d3 == d4 && d4 != d5
+            || d3 != d4 && d4 == d5 && d5 != d6
+            || d4 != d5 && d5 == d6
     });
     println!("Day 4b: {}", count);
 
