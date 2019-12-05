@@ -4,11 +4,18 @@ mod day_01;
 mod day_02;
 mod day_03;
 mod day_04;
+mod day_05;
 
 type DayFunction = fn() -> Result<(), Box<dyn error::Error>>;
 
 fn main() -> Result<(), Box<dyn error::Error>> {
-    let days: Vec<DayFunction> = vec![day_01::run, day_02::run, day_03::run, day_04::run];
+    let days: Vec<DayFunction> = vec![
+        day_01::run,
+        day_02::run,
+        day_03::run,
+        day_04::run,
+        day_05::run,
+    ];
 
     let now = time::Instant::now();
 
