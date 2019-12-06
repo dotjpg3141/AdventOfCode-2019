@@ -5,6 +5,7 @@ mod day_02;
 mod day_03;
 mod day_04;
 mod day_05;
+mod day_06;
 
 type DayFunction = fn() -> Result<(), Box<dyn error::Error>>;
 
@@ -15,6 +16,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         day_03::run,
         day_04::run,
         day_05::run,
+        day_06::run,
     ];
 
     let now = time::Instant::now();
