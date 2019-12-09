@@ -2,16 +2,20 @@ use std::convert::TryInto;
 use std::io::Read;
 use std::*;
 
+type Address = usize;
+type Value = i64;
+
 pub(crate) struct IntcodeComputer {
-    ip: usize,
-    memory: Vec<isize>,
+    ip: Address,
+    memory: Vec<Value>,
+    relative_base: Value,
     last_result: IntcodeComputerResult,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum IntcodeComputerRequest {
     Run,
-    Input(isize),
+    Input(Value),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,28 +23,29 @@ pub(crate) enum IntcodeComputerResult {
     Ready,
     Halt,
     Input,
-    Output(isize),
+    Output(Value),
 }
 
 impl IntcodeComputer {
-    pub fn memory_from_file(path: impl AsRef<path::Path>) -> io::Result<Vec<isize>> {
+    pub fn memory_from_file(path: impl AsRef<path::Path>) -> io::Result<Vec<Value>> {
         let mut file = fs::File::open(path)?;
         let mut input = String::new();
         file.read_to_string(&mut input)?;
         Ok(Self::parse_memory(&input))
     }
 
-    pub fn parse_memory(input: &str) -> Vec<isize> {
+    pub fn parse_memory(input: &str) -> Vec<Value> {
         input
             .split(',')
-            .map(|s| s.trim().parse::<isize>().unwrap())
+            .map(|s| s.trim().parse::<Value>().unwrap())
             .collect()
     }
 
-    pub fn with_memory(memory: Vec<isize>) -> Self {
+    pub fn with_memory(memory: Vec<Value>) -> Self {
         IntcodeComputer {
             ip: 0,
             memory,
+            relative_base: 0,
             last_result: IntcodeComputerResult::Ready,
         }
     }
@@ -48,7 +53,7 @@ impl IntcodeComputer {
     pub fn execute_step(&mut self, request: IntcodeComputerRequest) -> IntcodeComputerResult {
         match (self.last_result, request) {
             (IntcodeComputerResult::Input, IntcodeComputerRequest::Input(value)) => {
-                let result_addr = to_addr(self.memory[self.ip + 1]);
+                let result_addr = self.read_addr(1);
                 self.memory[result_addr] = value;
                 self.ip += 2;
             }
@@ -62,35 +67,16 @@ impl IntcodeComputer {
         }
 
         loop {
-            let read_parameter = |parameter_index: usize| -> isize {
-                let factor = match parameter_index {
-                    1 => 100,
-                    2 => 1000,
-                    3 => 10000,
-                    other => panic!("invalid parameter index: {}", other),
-                };
-
-                let mode = (self.memory[self.ip] / factor) % 10;
-                match mode {
-                    0 => {
-                        let addr = to_addr(self.memory[self.ip + parameter_index]);
-                        self.memory[addr]
-                    }
-                    1 => self.memory[self.ip + parameter_index],
-                    other => panic!("invalid parameter mode: {}", other),
-                }
-            };
-
             let opcode = self.memory[self.ip] % 100;
             match opcode {
                 1 => {
-                    let result_addr = to_addr(self.memory[self.ip + 3]);
-                    self.memory[result_addr] = read_parameter(1) + read_parameter(2);
+                    let addr = self.read_addr(3);
+                    self.memory[addr] = self.read_value(1) + self.read_value(2);
                     self.ip += 4;
                 }
                 2 => {
-                    let result_addr = to_addr(self.memory[self.ip + 3]);
-                    self.memory[result_addr] = read_parameter(1) * read_parameter(2);
+                    let addr = self.read_addr(3);
+                    self.memory[addr] = self.read_value(1) * self.read_value(2);
                     self.ip += 4;
                 }
                 3 => {
@@ -98,33 +84,37 @@ impl IntcodeComputer {
                     break;
                 }
                 4 => {
-                    self.last_result = IntcodeComputerResult::Output(read_parameter(1));
+                    self.last_result = IntcodeComputerResult::Output(self.read_value(1));
                     self.ip += 2;
                     break;
                 }
                 5 => {
-                    self.ip = if read_parameter(1) != 0 {
-                        to_addr(read_parameter(2))
+                    self.ip = if self.read_value(1) != 0 {
+                        to_addr(self.read_value(2))
                     } else {
                         self.ip + 3
                     };
                 }
                 6 => {
-                    self.ip = if read_parameter(1) == 0 {
-                        to_addr(read_parameter(2))
+                    self.ip = if self.read_value(1) == 0 {
+                        to_addr(self.read_value(2))
                     } else {
                         self.ip + 3
                     };
                 }
                 7 => {
-                    let addr = to_addr(self.memory[self.ip + 3]);
-                    self.memory[addr] = from_bool(read_parameter(1) < read_parameter(2));
+                    let addr = self.read_addr(3);
+                    self.memory[addr] = from_bool(self.read_value(1) < self.read_value(2));
                     self.ip += 4;
                 }
                 8 => {
-                    let addr = to_addr(self.memory[self.ip + 3]);
-                    self.memory[addr] = from_bool(read_parameter(1) == read_parameter(2));
+                    let addr = self.read_addr(3);
+                    self.memory[addr] = from_bool(self.read_value(1) == self.read_value(2));
                     self.ip += 4;
+                }
+                9 => {
+                    self.relative_base += self.read_value(1);
+                    self.ip += 2;
                 }
                 99 => {
                     self.last_result = IntcodeComputerResult::Halt;
@@ -137,7 +127,30 @@ impl IntcodeComputer {
         self.last_result
     }
 
-    pub fn eval(&mut self, input: &mut impl Iterator<Item = isize>) -> Vec<isize> {
+    fn read_value(&self, parameter_index: Address) -> Value {
+        let addr = self.read_addr(parameter_index);
+        self.memory[addr]
+    }
+
+    fn read_addr(&self, parameter_index: Address) -> Address {
+        let factor = match parameter_index {
+            1 => 100,
+            2 => 1000,
+            3 => 10000,
+            other => panic!("invalid parameter index: {}", other),
+        };
+
+        let mode = (self.memory[self.ip] / factor) % 10;
+        let addr = self.ip + parameter_index;
+        match mode {
+            0 => to_addr(self.memory[addr]),
+            1 => addr,
+            2 => to_addr(self.memory[addr] + self.relative_base),
+            other => panic!("invalid parameter mode: {}", other),
+        }
+    }
+
+    pub fn eval(&mut self, input: &mut impl Iterator<Item = Value>) -> Vec<Value> {
         let mut output = Vec::new();
         let mut request = IntcodeComputerRequest::Run;
 
@@ -158,7 +171,7 @@ impl IntcodeComputer {
         }
     }
 
-    pub fn read(&mut self) -> Result<isize, ()> {
+    pub fn read(&mut self) -> Result<Value, ()> {
         loop {
             match self.last_result {
                 IntcodeComputerResult::Output(value) => return Ok(value),
@@ -171,7 +184,7 @@ impl IntcodeComputer {
         }
     }
 
-    pub fn write(&mut self, value: isize) -> Result<(), ()> {
+    pub fn write(&mut self, value: Value) -> Result<(), ()> {
         loop {
             match self.last_result {
                 IntcodeComputerResult::Input => {
@@ -187,11 +200,11 @@ impl IntcodeComputer {
     }
 }
 
-fn to_addr(value: isize) -> usize {
-    value.try_into().expect("address cannot be negative")
+fn to_addr(value: Value) -> Address {
+    value.try_into().expect("cannot convert value to address")
 }
 
-fn from_bool(b: bool) -> isize {
+fn from_bool(b: bool) -> Value {
     if b {
         1
     } else {
