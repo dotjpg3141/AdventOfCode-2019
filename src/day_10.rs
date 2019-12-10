@@ -88,7 +88,7 @@ struct Vec2 {
 }
 
 impl Vec2 {
-    pub fn angle(&self) -> f32 {
+    pub fn angle(self) -> f32 {
         let angle = f32::atan2(self.y as f32, self.x as f32) + f32::consts::FRAC_PI_2;
         if angle < 0.0 {
             angle + f32::consts::PI * 2.0
@@ -97,7 +97,7 @@ impl Vec2 {
         }
     }
 
-    pub fn len_sqared(&self) -> i32 {
+    pub fn len_sqared(self) -> i32 {
         self.x * self.x + self.y * self.y
     }
 }
