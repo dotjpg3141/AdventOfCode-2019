@@ -6,7 +6,7 @@ const CHAR_BLACK: char = ' ';
 const CHAR_WHITE: char = '█';
 
 pub(crate) fn run() -> Result<(), Box<dyn error::Error>> {
-    let file = fs::File::open("input/day8.txt")?;
+    let file = fs::File::open("input/day08.txt")?;
 
     let width = 25;
     let height = 6;

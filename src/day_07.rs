@@ -4,7 +4,7 @@ use std::*;
 use crate::intcode_computer::*;
 
 pub(crate) fn run() -> Result<(), Box<dyn error::Error>> {
-    let memory = IntcodeComputer::memory_from_file("input/day7.txt")?;
+    let memory = IntcodeComputer::memory_from_file("input/day07.txt")?;
 
     let result = (0..=4)
         .permutations(5)

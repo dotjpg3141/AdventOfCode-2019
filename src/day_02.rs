@@ -2,7 +2,7 @@ use std::io::Read;
 use std::*;
 
 pub(crate) fn run() -> Result<(), Box<dyn error::Error>> {
-    let mut file = fs::File::open("input/day2.txt")?;
+    let mut file = fs::File::open("input/day02.txt")?;
     let mut input = String::new();
     file.read_to_string(&mut input)?;
 

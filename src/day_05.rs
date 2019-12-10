@@ -3,7 +3,7 @@ use std::*;
 use crate::intcode_computer::*;
 
 pub(crate) fn run() -> Result<(), Box<dyn error::Error>> {
-    let memory = IntcodeComputer::memory_from_file("input/day5.txt")?;
+    let memory = IntcodeComputer::memory_from_file("input/day05.txt")?;
 
     let result = eval(&memory, 1);
     println!("Day 5a: {:?}", result);

@@ -2,7 +2,7 @@ use std::io::BufRead;
 use std::*;
 
 pub(crate) fn run() -> Result<(), Box<dyn error::Error>> {
-    let file = fs::File::open("input/day1.txt")?;
+    let file = fs::File::open("input/day01.txt")?;
     let lines = io::BufReader::new(file).lines();
 
     let fuel_input = lines

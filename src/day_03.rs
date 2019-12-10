@@ -2,7 +2,7 @@ use std::io::BufRead;
 use std::*;
 
 pub(crate) fn run() -> Result<(), Box<dyn error::Error>> {
-    let file = fs::File::open("input/day3.txt")?;
+    let file = fs::File::open("input/day03.txt")?;
     let mut lines = io::BufReader::new(file).lines();
 
     let path1 = parse_path(&lines.next().unwrap()?);
